@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Authentication - NexStream</title>
+    
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
+
+    <style>
+        /* --- ULTIMATE ANTI-COPY & RESET --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; 
+            font-family: 'SF Pro Display', -apple-system, sans-serif;
+            
+            /* No Text Selection */
+            user-select: none; 
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            
+            /* No Long Press Menu on Mobile */
+            -webkit-touch-callout: none; 
+        }
+
+        /* Prevent image dragging */
+        img {
+            -webkit-user-drag: none;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- BACKGROUND WITH BLUR & DARK OVERLAY --- */
+        .bg-image {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://i.pinimg.com/736x/38/34/8a/38348a9ed76b838cd3150f3e585c5665.jpg') center/cover;
+            filter: blur(15px) brightness(0.35); 
+            transform: scale(1.1);
+            z-index: -2;
+        }
+
+        /* --- CUSTOM TOAST NOTIFICATION --- */
+        .toast {
+            position: fixed;
+            top: -100px; 
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transition: top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: blur(10px);
+            white-space: nowrap; /* Prevents text from breaking into multiple lines */
+        }
+
+        .toast.show { top: 40px; }
+        .toast.error { background: rgba(255, 59, 48, 0.9); } 
+        .toast.success { background: rgba(52, 199, 89, 0.9); } 
+
+        /* --- AUTH GLASS CARD --- */
+        .auth-card {
+            background: rgba(20, 20, 25, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: cardPop 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes cardPop {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .form-logo {
+            height: 38px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+
+        h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+        p.sub-title { color: #8e8e93; font-size: 14px; margin-bottom: 30px; }
+
+        /* --- INPUT FIELDS --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        #username-group { display: none; opacity: 0; transform: translateY(-10px); }
+
+        input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 14px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        input:focus { border-color: #1F80E0; background: rgba(255, 255, 255, 0.08); }
+        input::placeholder { color: #8e8e93; }
+
+        /* --- THE DUAL GLOW BUTTON & PERIMETER LOADER --- */
+        .btn-wrapper {
+            position: relative;
+            margin-top: 24px;
+            width: 100%;
+            height: 52px; 
+            border-radius: 14px;
+            overflow: hidden; 
+        }
+
+        .glow-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, #1F80E0 0%, #e00073 100%);
+            z-index: 1;
+            transition: opacity 0.3s;
+        }
+
+        .border-loader {
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, #1F80E0, #e00073);
+            animation: rotateBorder 1.5s linear infinite;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        @keyframes rotateBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .primary-btn {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%;
+            background: transparent; 
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.1s, color 0.3s, background 0.3s;
+        }
+
+        .primary-btn:active { transform: scale(0.96); }
+
+        .btn-wrapper.loading .glow-bg { opacity: 0; } 
+        .btn-wrapper.loading .border-loader { opacity: 1; } 
+        
+        .btn-wrapper.loading .primary-btn {
+            background: #111115; 
+            top: 2px; left: 2px; right: 2px; bottom: 2px;
+            width: calc(100% - 4px); height: calc(100% - 4px);
+            pointer-events: none; 
+            color: #8e8e93; 
+        }
+
+        .toggle-text {
+            margin-top: 24px;
+            font-size: 14px;
+            color: #8e8e93;
+        }
+        .toggle-text span { color: #ffffff; font-weight: 600; cursor: pointer; transition: color 0.2s; }
+        .toggle-text span:hover { color: #1F80E0; }
+
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <div class="bg-image"></div>
+    <div id="toast" class="toast">Message</div>
+
+    <div class="auth-card">
+        <img src="logo.png" alt="NexStream Logo" class="form-logo" onerror="this.style.display='none'">
+        
+        <h2 id="form-title">Welcome Back</h2>
+        <p class="sub-title" id="form-subtitle">Log in to NexStream</p>
+
+        <div class="input-group" id="username-group">
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <input type="email" id="email" placeholder="Email Address" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Password">
+        </div>
+
+        <div class="btn-wrapper" id="btn-container">
+            <div class="glow-bg"></div>
+            <div class="border-loader"></div>
+            <button class="primary-btn" id="submit-btn">
+                <span id="btn-text">Log In</span>
+            </button>
+        </div>
+
+        <div class="toggle-text" id="toggle-wrapper">
+            Don't have an account? <span id="toggle-mode" onclick="window.setMode('signup')">Sign Up</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDe8ay0sotr15cakvFFan4EO47J8gARcc0",
+            authDomain: "nexstream-abd76.firebaseapp.com",
+            databaseURL: "https://nexstream-abd76-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "nexstream-abd76",
+            storageBucket: "nexstream-abd76.firebasestorage.app",
+            messagingSenderId: "441736257520",
+            appId: "1:441736257520:web:c1db8f9dd0922c245b0735"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        const formTitle = document.getElementById('form-title');
+        const formSubtitle = document.getElementById('form-subtitle');
+        const usernameGroup = document.getElementById('username-group');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnContainer = document.getElementById('btn-container');
+        const btnText = document.getElementById('btn-text');
+        const toggleWrapper = document.getElementById('toggle-wrapper');
+        const toast = document.getElementById('toast');
+
+        let isLoginMode = true;
+
+        // Chhote aur crisp popups
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.className = `toast show ${isError ? 'error' : 'success'}`;
+            setTimeout(() => { toast.className = 'toast'; }, 3000);
+        }
+
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Window me attach kar diya taaki HTML ka onclick kaam kare
+        window.setMode = function(mode) {
+            isLoginMode = (mode === 'login');
+            
+            if (isLoginMode) {
+                formTitle.innerText = "Welcome Back";
+                formSubtitle.innerText = "Log in to NexStream";
+                usernameGroup.style.display = "none";
+                setTimeout(() => { usernameGroup.style.opacity = "0"; }, 10);
+                btnText.innerText = "Log In";
+                toggleWrapper.innerHTML = `Don't have an account? <span id="toggle-mode" onclick="window.setMode('signup')">Sign Up</span>`;
+            } else {
+                formTitle.innerText = "Create Account";
+                formSubtitle.innerText = "Join NexStream today";
+                usernameGroup.style.display = "block";
+                setTimeout(() => { 
+                    usernameGroup.style.opacity = "1"; 
+                    usernameGroup.style.transform = "translateY(0)"; 
+                }, 10);
+                btnText.innerText = "Sign Up";
+                toggleWrapper.innerHTML = `Already have an account? <span id="toggle-mode" onclick="window.setMode('login')">Log In</span>`;
+            }
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'signup') window.setMode('signup');
+
+        submitBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const username = usernameInput.value.trim();
+
+            if (!email || !password || (!isLoginMode && !username)) {
+                showToast("All fields required.", true);
+                return;
+            }
+            if (!validateEmail(email)) {
+                showToast("Invalid email format.", true);
+                return;
+            }
+
+            btnContainer.classList.add('loading');
+
+            try {
+                if (isLoginMode) {
+                    // Firebase Login
+                    await signInWithEmailAndPassword(auth, email, password);
+                    setTimeout(() => window.location.replace('index.html'), 800);
+                } else {
+                    // Firebase Signup
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(userCredential.user, { displayName: username });
+                    
+                    btnContainer.classList.remove('loading');
+                    showToast("Account created! Login now.", false);
+                    passwordInput.value = '';
+                    window.setMode('login');
+                }
+            } catch (error) {
+                btnContainer.classList.remove('loading');
+                
+                // Handling Firebase Errors with short English text
+                const errCode = error.code;
+                if (errCode === 'auth/invalid-credential' || errCode === 'auth/user-not-found' || errCode === 'auth/wrong-password') {
+                    showToast("Invalid credentials.", true);
+                } else if (errCode === 'auth/email-already-in-use') {
+                    showToast("Email already exists.", true);
+                } else if (errCode === 'auth/weak-password') {
+                    showToast("Password too weak.", true);
+                } else if (errCode === 'auth/network-request-failed') {
+                    showToast("Network error.", true);
+                } else {
+                    showToast("Something went wrong.", true);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
