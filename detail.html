@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loading... - SanppyRoll</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f47521'/%3E%3Cstop offset='100%25' stop-color='%23e85d04'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%23111'/%3E%3Cpolygon points='11,8 25,16 11,24' fill='url(%23g)'/%3E%3C/svg%3E">
+    <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'SF Pro Display', -apple-system, sans-serif;
+            user-select: none; -webkit-user-select: none;
+        }
+        body { background: #0b0b0e; color: #fff; min-height: 100vh; overflow-x: hidden; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+        img { pointer-events: none; -webkit-user-drag: none; display: block; }
+
+        /* ── SVG ICONS BASE ── */
+        .svg-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .svg-icon-fill { width: 14px; height: 14px; fill: currentColor; }
+
+        /* ── PAGE LOADER ── */
+        .page-loader {
+            position: fixed; inset: 0; background: #0b0b0e;
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+        .page-loader.hide { opacity: 0; visibility: hidden; }
+        .clean-loader { width: 38px; height: 38px; border: 2.5px solid rgba(255,255,255,0.08); border-top-color: #f47521; border-radius: 50%; animation: spin 0.75s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ── SKELETON ── */
+        .skeleton {
+            background: #12121a;
+            background-image: linear-gradient(90deg, #12121a 0px, #1e1e2a 40px, #12121a 80px);
+            background-size: 600px; animation: shimmer 1.5s infinite linear; border-radius: 8px; pointer-events: none;
+        }
+        @keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 800px 0; } }
+        .fade-in-content { animation: fadeIn 0.5s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ── NEW HERO HEADER ── */
+        .hero-header {
+            position: relative; width: 100%; padding: 30px 5% 10px; /* Fixed gap */
+            display: flex; gap: 15px; z-index: 2; align-items: flex-start;
+        }
+        .backdrop-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; max-height: 420px;
+            background-size: cover; background-position: center top;
+            z-index: 0; opacity: 0.35; filter: blur(15px);
+            mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+        }
+        .header-fade {
+            position: absolute; top: 0; left: 0; width: 100%; height: 90px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            z-index: 1; pointer-events: none; /* fade hadder applied */
+        }
+        .back-btn-new {
+            position: absolute; top: 15px; left: 15px; z-index: 10;
+            background: transparent; border: none; color: #fff;
+            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .poster-container {
+            width: 110px; flex-shrink: 0; z-index: 2; margin-top: 35px;
+            border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            background: #111; aspect-ratio: 2/3;
+        }
+        .poster-container img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .info-container {
+            display: flex; flex-direction: column; z-index: 2; margin-top: 35px; width: 100%;
+        }
+        .d-title { font-size: 20px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+        
+        .badges-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; align-items: center; }
+        .badge { background: rgba(255,255,255,0.08); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; color: #bbb; text-transform: uppercase; }
+        
+        .rating-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 12px; font-weight: 700; color: #ddd; }
+        .star-rating { color: #f5c518; display: flex; align-items: center; gap: 4px; }
+        .star-rating svg { width: 12px; height: 12px; fill: currentColor; }
+
+        .m-desc { font-size: 12px; color: #aaa; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* ── ACTION BUTTONS ── */
+        .action-row-new {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 5%; position: relative; z-index: 2; margin-bottom: 15px; gap: 10px;
+        }
+        .btn-main {
+            flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px; padding: 12px 0; color: #fff; font-size: 13px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-main:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
+        .btn-main svg { width: 16px; height: 16px; fill: currentColor; }
+        
+        .btn-icon {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            color: #aaa; font-size: 10px; font-weight: 600; cursor: pointer; background: transparent; border: none; width: 60px;
+        }
+        .btn-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; }
+        .btn-icon:active { color: #fff; transform: scale(0.95); }
+
+        /* ── TRAILER MODAL WITH CUSTOM HTML5 PLAYER & AMBIENT MODE ── */
+        .trailer-modal {
+            position: fixed; inset: 0; background: #000; /* Deep black to hide everything behind */
+            z-index: 20000; display: none; align-items: center; justify-content: center; flex-direction: column;
+            opacity: 0; transform: scale(1.05); transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .trailer-modal.show { opacity: 1; transform: scale(1); }
+        
+        .ambient-bg {
+            position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+        }
+        .ambient-bg video, .ambient-bg img {
+            width: 100%; height: 100%; object-fit: cover; 
+            filter: blur(50px) saturate(180%); opacity: 0.6; transform: scale(1.1);
+        }
+        
+        .player-wrapper {
+            position: relative; width: 100%; aspect-ratio: 16/9; background: #000; 
+            display: flex; flex-direction: column; z-index: 1; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .player-wrapper video { width: 100%; height: 100%; object-fit: contain; }
+        .player-wrapper iframe { width: 100%; height: 100%; border: none; }
+        
+        .player-top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px 20px;
+            display: flex; justify-content: flex-end; gap: 15px; z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+        .custom-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.1); color: #fff; 
+            width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; cursor: pointer; backdrop-filter: blur(5px); transition: 0.2s;
+        }
+        .custom-btn:active { transform: scale(0.9); }
+        
+        /* HTML5 Timeline Controls */
+        .html5-controls {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px 15px 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            display: flex; align-items: center; gap: 12px; z-index: 10;
+        }
+        .play-pause-btn { background: none; border: none; color: #fff; cursor: pointer; padding: 5px; display:flex; align-items:center; }
+        .play-pause-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        
+        /* Extended touch target for progress container to make dragging easier */
+        .progress-container { flex: 1; height: 24px; display: flex; align-items: center; cursor: pointer; position: relative; touch-action: none; }
+        .progress-track { width: 100%; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; position: relative; pointer-events: none; }
+        .progress-bar { height: 100%; background: #f47521; border-radius: 2px; width: 0%; pointer-events: none; position: relative;}
+        .progress-bar::after { content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        
+        .time-display { color: #fff; font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 500; }
+
+        /* ── CONTENT CONTAINER ── */
+        .details-container { padding: 0 5% 40px; position: relative; z-index: 10; }
+
+        /* SEASON TABS */
+        .season-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; color: #fff; }
+        .season-tabs { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; scrollbar-width: none; }
+        .season-tabs::-webkit-scrollbar { display: none; }
+        .season-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 12px; color: #aaa; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+        .season-btn.active { background: #fff; color: #000; border-color: #fff; }
+
+        /* ── EPISODE CARDS ── */
+        #episode-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;}
+        .ep-card { display: flex; gap: 12px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); align-items: center; position: relative; cursor: pointer; transition: background 0.2s;}
+        .ep-card:active { background: rgba(255,255,255,0.08); }
+        .ep-thumb { width: 120px; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; position: relative; flex-shrink: 0; background: #111; }
+        .ep-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .ep-thumb .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #fff; z-index: 2; width:24px; height:24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+        
+        .ep-info { display: flex; flex-direction: column; justify-content: center; width: 100%; }
+        .ep-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .ep-desc-text { font-size: 10px; color: #888; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .ep-duration { font-size: 10px; color: #555; margin-top: 4px; font-weight: 600; }
+
+        /* ── LIST STYLE DETAILS ── */
+        .sec-title { font-size: 18px; font-weight: 700; color: #34c759; margin-bottom: 12px; } 
+        .info-ul { list-style: none; margin-bottom: 25px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); }
+        .info-ul li { display: flex; gap: 8px; font-size: 14px; margin-bottom: 8px; line-height: 1.5; align-items: flex-start; }
+        .info-ul li:last-child { margin-bottom: 0; }
+        .info-ul li::before { content: '▪'; color: #888; font-size: 14px; margin-top: -1px; }
+        .info-ul .lbl { color: #aaa; font-weight: 600; white-space: nowrap; }
+        .info-ul .val { color: #ddd; font-weight: 500; }
+
+        /* ── VERTICAL SCREENSHOTS ── */
+        .screenshots-container { margin-bottom: 25px; }
+        .ss-grid { display: flex; flex-direction: column; gap: 12px; }
+        .ss-card { width: 100%; border-radius: 8px; overflow: hidden; background: #111; }
+        .ss-card img { width: 100%; height: auto; display: block; opacity: 0; transition: opacity 0.5s; }
+
+        /* ── ENHANCED TELEGRAM SECTION ── */
+        .tg-card {
+            background: linear-gradient(145deg, rgba(44,160,217,0.1), rgba(44,160,217,0.02));
+            border: 1px solid rgba(44,160,217,0.2); border-radius: 12px;
+            padding: 20px; text-align: center; margin-bottom: 20px; position: relative; overflow: hidden;
+        }
+        .tg-card::before {
+            content: ''; position: absolute; top: -50px; left: -50px; width: 100px; height: 100px;
+            background: rgba(44,160,217,0.2); filter: blur(40px); border-radius: 50%;
+        }
+        .tg-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+        .tg-desc { font-size: 12px; color: #aaa; margin-bottom: 15px; line-height: 1.4; }
+        .tg-btn {
+            width: 100%; height: 45px; border-radius: 8px; border: none;
+            background: #2ca0d9; color: #fff; font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: 0.2s;
+        }
+        .tg-btn:active { transform: scale(0.97); }
+        .tg-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* TOAST */
+        .toast { position: fixed; top: -80px; left: 50%; transform: translateX(-50%); background: rgba(18,18,24,0.96); backdrop-filter: blur(10px); color: #fff; padding: 11px 18px; border-radius: 22px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 30000; transition: top 0.38s ease; border: 1px solid rgba(255,59,48,0.4); display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+        .toast.show { top: 38px; }
+        .toast.success { color: #32d74b; border-color: rgba(50,215,75,0.4); }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div class="page-loader" id="page-loader"><div class="clean-loader"></div></div>
+<div id="toast" class="toast">
+    <svg class="svg-icon" id="toast-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span id="toast-msg">Error</span>
+</div>
+
+<div class="trailer-modal" id="trailer-modal">
+    <div class="ambient-bg" id="ambient-bg"></div>
+    <div class="player-wrapper" id="modal-media-container"></div>
+</div>
+
+<div id="skeleton-ui" style="position:absolute;top:0;left:0;width:100%;transition:opacity 0.4s;z-index:50; padding:20px 5%;">
+    <div class="skeleton" style="width:100px; height:150px; border-radius:10px; margin-top:30px;"></div>
+    <div class="skeleton" style="width:100%; height:40px; border-radius:8px; margin-top:20px;"></div>
+    <div class="skeleton" style="width:100%; height:150px; border-radius:10px; margin-top:20px;"></div>
+</div>
+
+<div id="real-ui" style="display:none;opacity:0;">
+
+    <div class="header-fade"></div>
+    <button class="back-btn-new" onclick="history.back()">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+
+    <div class="hero-header">
+        <div class="backdrop-bg" id="bg-backdrop"></div>
+        <div class="poster-container">
+            <img id="main-poster" src="" alt="Poster">
+        </div>
+        <div class="info-container">
+            <h1 class="d-title" id="d-title"></h1>
+            <div class="badges-row" id="badges-row"></div>
+            <div class="rating-row" id="rating-row" style="display:none;">
+                <div class="star-rating">
+                    <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <span id="d-rate"></span>
+                </div>
+                <span id="d-quality" style="font-weight:600; color:#aaa;"></span>
+                <span id="d-audio" style="font-weight:600; color:#aaa;"></span>
+            </div>
+            <p class="m-desc" id="desc"></p>
+        </div>
+    </div>
+
+    <div class="action-row-new">
+        <button class="btn-main" id="btn-play-trailer" onclick="openTrailer()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Play Trailer
+        </button>
+        <button class="btn-main" id="btn-play-movie" onclick="startPlay()" style="display:none; background: #fff; color: #000; border: none;">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Play Now
+        </button>
+        <button class="btn-icon" onclick="showToast('Added to Watchlist', 'success')">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Watchlist
+        </button>
+        <button class="btn-icon" onclick="shareMovie()">
+            <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            Share
+        </button>
+    </div>
+
+    <div class="details-container">
+
+        <div id="series-selector" style="display:none;">
+            <div class="season-title" id="s-title-text">Season 1</div>
+            <div class="season-tabs" id="season-tabs"></div>
+            <div id="episode-list"></div>
+        </div>
+
+        <div class="sec-title" id="dt-title-head">Movie Details :</div>
+        <ul class="info-ul" id="dynamic-info-list">
+        </ul>
+
+        <div class="screenshots-container" id="screenshots-section" style="display:none;">
+            <div class="sec-title" style="color:#fff;">Screenshots</div>
+            <div class="ss-grid" id="ss-grid"></div>
+        </div>
+
+        <div class="tg-card">
+            <div class="tg-title">Join Our VIP Community</div>
+            <div class="tg-desc">Stay updated with latest releases, request your favorite movies/series, and connect with other fans.</div>
+            <button class="tg-btn" onclick="window.open('https://t.me/temp_link_here', '_blank')">
+                <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2z"></path></svg> Join Telegram Now
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDe8ay0sotr15cakvFFan4EO47J8gARcc0",
+        authDomain: "nexstream-abd76.firebaseapp.com",
+        databaseURL: "https://nexstream-abd76-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "nexstream-abd76",
+        storageBucket: "nexstream-abd76.firebasestorage.app",
+        messagingSenderId: "441736257520",
+        appId: "1:441736257520:web:c1db8f9dd0922c245b0735"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db);
+    const auth = getAuth(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const movieId = urlParams.get('id');
+
+    let movieData = null;
+    let currentPlayingType = 'movie';
+    let currentSeasonIndex = 0;
+    let currentUser = null;
+    
+    // Player Variables
+    let isModalMuted = true;
+    let isPlaying = true;
+    let customVideoElement = null;
+    let customAmbientElement = null;
+    let isDraggingTimeline = false;
+
+    function hidePageLoader() {
+        const loader = document.getElementById('page-loader');
+        loader.classList.add('hide');
+        setTimeout(() => { loader.style.display = 'none'; }, 450);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        if (!movieData) fetchDetails();
+    });
+
+    window.showToast = function(msg, type = "error") {
+        const toast = document.getElementById('toast');
+        const icon = document.getElementById('toast-icon');
+        toast.className = 'toast show';
+        if (type === 'success') {
+            toast.classList.add('success');
+            icon.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>';
+        } else {
+            icon.innerHTML = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
+        }
+        document.getElementById('toast-msg').innerText = msg;
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    async function fetchDetails() {
+        if (!movieId) { window.location.replace('index.html'); return; }
+        try {
+            const snapshot = await get(child(dbRef, `movies/${movieId}`));
+            if (snapshot.exists()) {
+                movieData = snapshot.val();
+                currentPlayingType = movieData.type || 'movie';
+                document.title = `${movieData.title} - SanppyRoll`;
+                setTimeout(() => { renderPage(); hidePageLoader(); }, 100);
+            } else {
+                document.getElementById('skeleton-ui').style.display = 'none';
+                hidePageLoader();
+                showToast("Content not found!");
+            }
+        } catch(err) {
+            document.getElementById('skeleton-ui').style.display = 'none';
+            hidePageLoader();
+            showToast("Network Error!");
+        }
+    }
+
+    window.shareMovie = function() {
+        setTimeout(async () => {
+            if (navigator.share) {
+                try { await navigator.share({ title: movieData?.title || 'SanppyRoll', text: `Watch ${movieData?.title} on SanppyRoll!`, url: window.location.href }); }
+                catch(e) {}
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                showToast('Link copied!', 'success');
+            }
+        }, 150);
+    };
+
+    function getYoutubeId(url) {
+        if (!url) return null;
+        let match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+        return match ? match[1] : null;
+    }
+
+    function formatTime(seconds) {
+        if(isNaN(seconds)) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function renderPage() {
+        const posterImg = movieData.poster || movieData.backdrop || '';
+        document.getElementById('main-poster').src = posterImg;
+        document.getElementById('bg-backdrop').style.backgroundImage = `url(${movieData.backdrop || posterImg})`;
+
+        if (movieData.title) document.getElementById('d-title').innerText = movieData.title;
+        if (movieData.description) document.getElementById('desc').innerText = movieData.description;
+
+        let badgesHtml = '';
+        if (movieData.year) badgesHtml += `<span class="badge">${movieData.year}</span>`;
+        if (currentPlayingType) badgesHtml += `<span class="badge">${currentPlayingType}</span>`;
+        
+        let gArray = [];
+        if (movieData.genres?.trim()) {
+            gArray = movieData.genres.split(',').map(s => s.trim()).filter(Boolean);
+            gArray.slice(0, 2).forEach(g => { badgesHtml += `<span class="badge">${g}</span>`; });
+        }
+        
+        if (movieData.age_rating || movieData.age) {
+            badgesHtml += `<span class="badge">${movieData.age_rating || movieData.age}</span>`;
+        }
+
+        document.getElementById('badges-row').innerHTML = badgesHtml;
+
+        let rawRate = movieData.rating;
+        if (rawRate && rawRate !== "N/A") { 
+            const n = parseFloat(rawRate); 
+            if (!isNaN(n)) {
+                document.getElementById('d-rate').innerText = n.toFixed(1);
+                document.getElementById('rating-row').style.display = 'flex';
+            }
+        }
+
+        let allLinks = currentPlayingType === 'series' || currentPlayingType === 'anime'
+            ? (movieData.seasons?.[0]?.episodes?.[0]?.video_links || [])
+            : (movieData.video_links || []);
+        
+        let allAudio = currentPlayingType === 'series' || currentPlayingType === 'anime'
+            ? (movieData.seasons?.[0]?.episodes?.[0]?.audio_links || [])
+            : (movieData.audio_links || []);
+
+        const uniqueQualities = [...new Set(allLinks.map(l => (l.label || 'HD')))];
+        const uniqueAudio = [...new Set(allAudio.map(a => (a.label || 'Hindi')))];
+
+        if(uniqueQualities.length) document.getElementById('d-quality').innerText = uniqueQualities[0];
+        if(uniqueAudio.length) document.getElementById('d-audio').innerText = uniqueAudio[0];
+
+        document.getElementById('dt-title-head').innerText = currentPlayingType === 'series' ? 'Series Details :' : 'Movie Details :';
+        let dHtml = '';
+        const addL = (lbl, val) => { if(val) dHtml += `<li><span class="lbl">${lbl}:</span> <span class="val">${val}</span></li>`; };
+        
+        addL('Full Name', movieData.title);
+        if(uniqueAudio.length) addL('Language', uniqueAudio.join(' - '));
+        addL('Released Year', movieData.year);
+        addL('Size', movieData.size || '750MB | 1.2GB | 2.5GB'); 
+        if(uniqueQualities.length) addL('Quality', uniqueQualities.join(' | '));
+        addL('Source', movieData.source || 'WEB-DL');
+        addL('Genres', movieData.genres);
+        addL('Cast', movieData.cast);
+        
+        document.getElementById('dynamic-info-list').innerHTML = dHtml;
+
+        let trailerUrl = movieData.trailer || movieData.trailer_url;
+        if (!trailerUrl) { document.getElementById('btn-play-trailer').style.display = 'none'; }
+
+        if (currentPlayingType === 'series' || currentPlayingType === 'anime') {
+            document.getElementById('series-selector').style.display = 'block';
+            if(movieData.seasons) { renderSeasonTabs(); renderEpisodeList(); }
+        } else {
+            document.getElementById('btn-play-movie').style.display = 'flex';
+        }
+
+        if (movieData.screenshots?.length > 0) {
+            document.getElementById('screenshots-section').style.display = 'block';
+            document.getElementById('ss-grid').innerHTML = movieData.screenshots.map(url => `<div class="ss-card"><img src="${url}" loading="lazy" onload="this.style.opacity=1"></div>`).join('');
+        }
+
+        const skeletonUi = document.getElementById('skeleton-ui');
+        const realUi = document.getElementById('real-ui');
+        realUi.style.display = 'block';
+        skeletonUi.style.opacity = '0';
+        void realUi.offsetWidth;
+        realUi.classList.add('fade-in-content');
+        setTimeout(() => { skeletonUi.style.display = 'none'; }, 400);
+    }
+
+    window.changeSeason = function(index) {
+        currentSeasonIndex = index;
+        document.getElementById('s-title-text').innerText = movieData.seasons[index].season_title || `Season ${index + 1}`;
+        renderSeasonTabs(); renderEpisodeList();
+    };
+
+    function renderSeasonTabs() {
+        if(movieData.seasons.length <= 1) {
+            document.getElementById('season-tabs').style.display = 'none';
+            return;
+        }
+        document.getElementById('season-tabs').innerHTML = movieData.seasons.map((s, i) =>
+            `<button class="season-btn ${i === currentSeasonIndex ? 'active' : ''}" onclick="window.changeSeason(${i})">${s.season_title || 'S'+(i+1)}</button>`
+        ).join('');
+    }
+
+    function renderEpisodeList() {
+        const epListDiv = document.getElementById('episode-list');
+        const season = movieData.seasons[currentSeasonIndex];
+        if (!season?.episodes) return;
+        
+        epListDiv.innerHTML = season.episodes.map((ep, i) => {
+            const fallback = movieData.backdrop || movieData.poster || '';
+            const epImg = ep.ep_thumb || fallback;
+            const titleStr = `${i + 1}. ${ep.ep_title || 'Episode ' + (i+1)}`;
+            const epDesc = ep.ep_desc ? `<p class="ep-desc-text">${ep.ep_desc}</p>` : '';
+            return `<div class="ep-card" onclick="window.startEpisode(${i})">
+                <div class="ep-thumb">
+                    <img src="${epImg}" loading="lazy">
+                    <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </div>
+                <div class="ep-info">
+                    <div class="ep-title">${titleStr}</div>
+                    ${epDesc}
+                    <div class="ep-duration">23m</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    window.startPlay = function() {
+        if (!currentUser) { setTimeout(() => { window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`; }, 1000); return; }
+        if (!movieData?.video_links?.length) { showToast("Not available yet!"); return; }
+        window.location.href = `player.html?id=${movieId}`;
+    };
+
+    window.startEpisode = function(epIndex) {
+        if (!currentUser) { showToast("Login to watch."); setTimeout(() => { window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`; }, 1200); return; }
+        const ep = movieData.seasons[currentSeasonIndex].episodes[epIndex];
+        if (!ep?.video_links?.length) return showToast("Video not available!");
+        window.location.href = `player.html?id=${movieId}&s=${currentSeasonIndex}&e=${epIndex}`;
+    };
+
+    // ── ANIMATED CUSTOM TRAILER WITH AMBIENT BACKGROUND & SCRUB ──
+    window.openTrailer = function() {
+        const modal = document.getElementById('trailer-modal');
+        const container = document.getElementById('modal-media-container');
+        const ambientBg = document.getElementById('ambient-bg');
+        
+        let trailerUrl = movieData.trailer || movieData.trailer_url;
+        if(!trailerUrl) { showToast("Trailer not found!"); return; }
+
+        let ytId = getYoutubeId(trailerUrl);
+        isModalMuted = true;
+
+        if (ytId) {
+            ambientBg.innerHTML = `<img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" alt="bg">`;
+            container.innerHTML = `
+                <div class="player-top-bar">
+                    <button class="custom-btn" onclick="closeTrailer()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+                </div>
+                <iframe id="modal-yt-iframe" src="https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0" allow="autoplay; encrypted-media"></iframe>
+            `;
+        } else {
+            ambientBg.innerHTML = `<video id="modal-ambient-video" src="${trailerUrl}" autoplay muted playsinline loop></video>`;
+            container.innerHTML = `
+                <div class="player-top-bar">
+                    <button class="custom-btn" id="modal-mute-btn" onclick="toggleMuteHtml5()"></button>
+                    <button class="custom-btn" onclick="closeTrailer()"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+                </div>
+                <video id="modal-html5-video" src="${trailerUrl}" autoplay muted playsinline></video>
+                <div class="html5-controls">
+                    <button class="play-pause-btn" id="play-pause-btn" onclick="togglePlayPause()"></button>
+                    <div class="progress-container" id="progress-container">
+                        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+                    </div>
+                    <div class="time-display" id="time-display">0:00 / 0:00</div>
+                </div>
+            `;
+            initHtml5Controls();
+        }
+        
+        // CSS Animation Trigger
+        modal.style.display = 'flex';
+        void modal.offsetWidth; // force reflow
+        modal.classList.add('show');
+    };
+
+    function initHtml5Controls() {
+        customVideoElement = document.getElementById('modal-html5-video');
+        customAmbientElement = document.getElementById('modal-ambient-video');
+        const playBtn = document.getElementById('play-pause-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const timeDisplay = document.getElementById('time-display');
+        
+        isPlaying = true;
+        updatePlayIcon();
+        updateMuteIconUI();
+
+        customVideoElement.addEventListener('timeupdate', () => {
+            if(!isDraggingTimeline) {
+                const percent = (customVideoElement.currentTime / customVideoElement.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                timeDisplay.innerText = `${formatTime(customVideoElement.currentTime)} / ${formatTime(customVideoElement.duration)}`;
+            }
+        });
+
+        // Sync Ambient video
+        customVideoElement.addEventListener('play', () => { if(customAmbientElement) customAmbientElement.play(); });
+        customVideoElement.addEventListener('pause', () => { if(customAmbientElement) customAmbientElement.pause(); });
+        customVideoElement.addEventListener('seeking', () => { if(customAmbientElement) customAmbientElement.currentTime = customVideoElement.currentTime; });
+        customVideoElement.addEventListener('ended', () => { isPlaying = false; updatePlayIcon(); });
+
+        // Draggable Timeline Logic (Hold and Scrub)
+        const updateProgress = (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            let pos = (e.clientX - rect.left) / rect.width;
+            pos = Math.max(0, Math.min(1, pos)); // Clamp between 0 and 1
+            progressBar.style.width = `${pos * 100}%`;
+            customVideoElement.currentTime = pos * customVideoElement.duration;
+            if(customAmbientElement) customAmbientElement.currentTime = customVideoElement.currentTime;
+        };
+
+        progressContainer.addEventListener('pointerdown', (e) => {
+            isDraggingTimeline = true;
+            progressContainer.setPointerCapture(e.pointerId); // Keep tracking even if finger leaves container slightly
+            updateProgress(e);
+        });
+
+        progressContainer.addEventListener('pointermove', (e) => {
+            if(isDraggingTimeline) updateProgress(e);
+        });
+
+        progressContainer.addEventListener('pointerup', (e) => {
+            isDraggingTimeline = false;
+            progressContainer.releasePointerCapture(e.pointerId);
+        });
+    }
+
+    window.togglePlayPause = function() {
+        if(!customVideoElement) return;
+        if(customVideoElement.paused) { customVideoElement.play(); isPlaying = true; } 
+        else { customVideoElement.pause(); isPlaying = false; }
+        updatePlayIcon();
+    };
+
+    function updatePlayIcon() {
+        const btn = document.getElementById('play-pause-btn');
+        if(!btn) return;
+        if(isPlaying) {
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+        } else {
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        }
+    }
+
+    window.toggleMuteHtml5 = function() {
+        isModalMuted = !isModalMuted;
+        if(customVideoElement) customVideoElement.muted = isModalMuted;
+        updateMuteIconUI();
+    };
+
+    function updateMuteIconUI() {
+        const btn = document.getElementById('modal-mute-btn');
+        if(!btn) return;
+        const svgUnmuted = '<svg class="svg-icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+        const svgMuted = '<svg class="svg-icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+        btn.innerHTML = isModalMuted ? svgMuted : svgUnmuted;
+    }
+
+    window.closeTrailer = function() {
+        const modal = document.getElementById('trailer-modal');
+        const container = document.getElementById('modal-media-container');
+        const ambientBg = document.getElementById('ambient-bg');
+        
+        modal.classList.remove('show');
+        if(customVideoElement) customVideoElement.pause();
+        if(customAmbientElement) customAmbientElement.pause();
+        
+        setTimeout(() => { 
+            modal.style.display = 'none';
+            container.innerHTML = ''; 
+            ambientBg.innerHTML = '';
+            customVideoElement = null;
+            customAmbientElement = null;
+        }, 350);
+    };
+
+</script>
+</body>
+</html>
